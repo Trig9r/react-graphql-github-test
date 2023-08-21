@@ -1,0 +1,20 @@
+.repo {
+
+  &__header__info {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+
+    margin-bottom: 24px;
+
+    &__title {
+      font-size: 32px;
+      font-weight: 400;
+    }
+
+    &__sub_info {
+      display: flex;
+      justify-content: space-between;
+    }
+  }
+}
