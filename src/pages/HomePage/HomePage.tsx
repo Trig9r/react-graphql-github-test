@@ -1,7 +1,9 @@
+/* eslint-disable import/no-extraneous-dependencies */
 /* eslint-disable no-nested-ternary */
 import React from 'react';
 import { toast } from 'react-hot-toast';
 import { useDispatch, useSelector } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
 
 import { DataGrid, RepositoryInfoBlock } from '@/components';
 import { Footer } from '@/components/Footer';
@@ -17,6 +19,7 @@ import styles from './styles.module.scss';
 import spinnerStyles from '@/styles/css/loading.module.scss';
 
 export const HomePage = () => {
+  const navigate = useNavigate();
   const dispatch = useDispatch();
   const { searchValue, repository } = useSelector(selectFilter);
 
@@ -84,6 +87,10 @@ export const HomePage = () => {
     document.body.classList.remove('has-repo-container');
   }
 
+  if (isError) {
+    navigate('/404');
+  }
+
   return (
     <>
       <header className={styles.header}>
@@ -106,7 +113,7 @@ export const HomePage = () => {
 
       <div className='container'>
         <section className={styles.content__inner}>
-          {isLoading || isError ? (
+          {isLoading ? (
             <span
               className={`${spinnerStyles.loading} ${spinnerStyles.dark_mode}`}
               style={{ top: '47%', left: '47%' }}
