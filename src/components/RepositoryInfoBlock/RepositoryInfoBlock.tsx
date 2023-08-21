@@ -28,7 +28,14 @@ export const RepositoryInfoBlock: React.FC<RepositoryFilterProps> = ({ name, own
         <h1 className={styles.repo__header__info__title}>{selectedRepository.name}</h1>
 
         <div className={styles.repo__header__info__sub_info}>
-          <Chip label={selectedRepository.primaryLanguage.name} color='primary' />
+          <Chip
+            label={
+              selectedRepository.primaryLanguage
+                ? selectedRepository.primaryLanguage.name
+                : 'Язык не выбран'
+            }
+            color='primary'
+          />
           <Stack direction='row' alignItems='center' spacing={1}>
             <StarIcon style={{ color: '#FFB400' }} />
             <span>{formatCount(selectedRepository.stargazerCount)}</span>
