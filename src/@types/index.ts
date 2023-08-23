@@ -1,3 +1,5 @@
+import { SORT_ASC, SORT_DESC } from '@/constants';
+
 // Общий объект возвращаемый api по поиску
 export interface SearchDataProps {
   search: SearchType;
@@ -22,11 +24,11 @@ export interface SearchRepositoriesType {
 // Базовая информация репозитория
 export interface RepositoryType {
   name: string;
-  primaryLanguage: {
-    name: string;
-  };
+  primaryLanguage: PrimaryLanguageType;
   stargazerCount: number;
 }
+
+export type PrimaryLanguageType = null | { name: string };
 
 // Дополнительная информация репозитория по поиску
 export interface SearchRepositoryType extends RepositoryType {
@@ -59,6 +61,8 @@ export interface RepositoriesPageInfo {
 export interface SearchRequestProps {
   search: string;
   per_page: number;
+  sortProperty: SortPropertyType;
+  sortDirection: SortDirectionType;
   next_page?: string;
   prev_page?: string;
 }
@@ -70,11 +74,20 @@ export interface LanguagesRepoType {
   };
 }
 
+// Тип направления сортировки
+export type SortDirectionType = typeof SORT_ASC | typeof SORT_DESC;
+
+// Тип полей сортировки
+export type SortPropertyType = 'name' | 'stars' | 'updated' | 'forks' | 'lang';
+
 // Типы для store, выбор и поиск репозитория
 export interface FilterSliceState {
   searchValue: string;
+  sortProperty: SortPropertyType;
+  sortDirection: SortDirectionType;
   repository: RepositoryFilterProps;
 }
+
 export interface RepositoryFilterProps {
   name: string;
   owner: string;

@@ -1,9 +1,12 @@
 /* eslint-disable react/no-unused-prop-types */
 import React from 'react';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 
-import { SearchRepositoriesType } from '@/@types';
-import { setSelectedRepository } from '@/store/filter/slice';
+import { SortPropertyType } from '@/@types';
+import { SORT_ASC, SORT_DESC, SORT_PROPERTY, TABLE_HEADER } from '@/constants';
+import { selectFilter } from '@/store/filter/selectors';
+import { setSelectedRepository, setSortDirection, setSortProperty } from '@/store/filter/slice';
+import { selectRepositories } from '@/store/github/selectors';
 import Paper from '@mui/material/Paper';
 import Table from '@mui/material/Table';
 import TableBody from '@mui/material/TableBody';
@@ -15,57 +18,17 @@ import TableSortLabel from '@mui/material/TableSortLabel';
 
 import styles from './styles.module.scss';
 
-interface DataGridProps {
-  node: SearchRepositoriesType[];
-}
-
-export const DataGrid: React.FC<DataGridProps> = ({ node }) => {
+export const DataGrid: React.FC = () => {
   const dispatch = useDispatch();
 
-  const [orderDirection, setOrderDirection] = React.useState('asc');
-  const [valueToOrderBy, setValueToOrderBy] = React.useState('name');
+  const { sortDirection, sortProperty } = useSelector(selectFilter);
+  const { search: searchedRepository } = useSelector(selectRepositories);
 
-  const handleRequestSort = (property: string) => {
-    const isAsc = valueToOrderBy === property && orderDirection === 'asc';
-    setOrderDirection(isAsc ? 'desc' : 'asc');
-    setValueToOrderBy(property);
+  const handleChangeSort = (property: SortPropertyType) => {
+    const isAsc = sortProperty === property && sortDirection === SORT_ASC;
+    dispatch(setSortDirection(isAsc ? SORT_DESC : SORT_ASC));
+    dispatch(setSortProperty(property));
   };
-
-  const sortedData = React.useMemo(() => {
-    const comparator = (a: string, b: string) => {
-      if (orderDirection === 'asc') {
-        return a.localeCompare(b);
-      }
-      return b.localeCompare(a);
-    };
-
-    return node.slice().sort((a: SearchRepositoriesType, b: SearchRepositoriesType) => {
-      if (valueToOrderBy === 'name') {
-        return comparator(a.node.name, b.node.name);
-      }
-      if (valueToOrderBy === 'lang') {
-        return comparator(a.node.primaryLanguage.name || '', b.node.primaryLanguage.name || '');
-      }
-      if (valueToOrderBy === 'countFork') {
-        const diff = a.node.forks.totalCount - b.node.forks.totalCount;
-        return orderDirection === 'asc' ? diff : -diff;
-      }
-      if (valueToOrderBy === 'countStar') {
-        const diff = a.node.stargazerCount - b.node.stargazerCount;
-        return orderDirection === 'asc' ? diff : -diff;
-      }
-      if (valueToOrderBy === 'dateUpdate') {
-        const dateDiff =
-          new Date(a.node.updatedAt).getTime() - new Date(b.node.updatedAt).getTime();
-
-        if (orderDirection === 'asc') {
-          return dateDiff;
-        }
-        return -dateDiff;
-      }
-      return 0;
-    });
-  }, [node, orderDirection, valueToOrderBy]);
 
   const handleSelectRepository = (name: string, owner: string) => {
     dispatch(setSelectedRepository({ name, owner }));
@@ -78,65 +41,65 @@ export const DataGrid: React.FC<DataGridProps> = ({ node }) => {
           <TableRow>
             <TableCell key='name'>
               <TableSortLabel
-                active={valueToOrderBy === 'name'}
-                direction={orderDirection === 'asc' ? 'asc' : 'desc'}
+                active={sortProperty === 'name'}
+                direction={sortDirection === SORT_ASC ? SORT_ASC : SORT_DESC}
                 className={styles.reverse_sort_label}
-                onClick={() => handleRequestSort('name')}
+                onClick={() => handleChangeSort('name')}
               >
-                Название
+                {TABLE_HEADER.ROW_NAME}
               </TableSortLabel>
             </TableCell>
 
             <TableCell key='lang'>
               <TableSortLabel
-                active={valueToOrderBy === 'lang'}
+                active={sortProperty === 'lang'}
                 className={styles.reverse_sort_label}
-                direction={orderDirection === 'asc' ? 'asc' : 'desc'}
-                onClick={() => handleRequestSort('lang')}
+                direction={sortDirection === SORT_ASC ? SORT_ASC : SORT_DESC}
+                onClick={() => handleChangeSort('lang')}
               >
-                Язык
+                {TABLE_HEADER.ROW_LANG}
               </TableSortLabel>
             </TableCell>
 
-            <TableCell key='countFork'>
+            <TableCell key='forks'>
               <TableSortLabel
-                active={valueToOrderBy === 'countFork'}
+                active={sortProperty === SORT_PROPERTY.FORKS_COUNT}
                 className={styles.reverse_sort_label}
-                direction={orderDirection === 'asc' ? 'asc' : 'desc'}
-                onClick={() => handleRequestSort('countFork')}
+                direction={sortDirection === SORT_ASC ? SORT_ASC : SORT_DESC}
+                onClick={() => handleChangeSort('forks')}
               >
-                Число форков
+                {TABLE_HEADER.ROW_COUNT_FORKS}
               </TableSortLabel>
             </TableCell>
 
-            <TableCell key='countStar'>
+            <TableCell key='stars'>
               <TableSortLabel
-                active={valueToOrderBy === 'countStar'}
+                active={sortProperty === SORT_PROPERTY.STARS}
                 className={styles.reverse_sort_label}
-                direction={orderDirection === 'asc' ? 'asc' : 'desc'}
-                onClick={() => handleRequestSort('countStar')}
+                direction={sortDirection === SORT_ASC ? SORT_ASC : SORT_DESC}
+                onClick={() => handleChangeSort('stars')}
               >
-                Число звёзд
+                {TABLE_HEADER.ROW_COUNT_STARS}
               </TableSortLabel>
             </TableCell>
 
-            <TableCell key='dateUpdate'>
+            <TableCell key={SORT_PROPERTY.UPDATED}>
               <TableSortLabel
-                active={valueToOrderBy === 'dateUpdate'}
+                active={sortProperty === SORT_PROPERTY.UPDATED}
                 className={styles.reverse_sort_label}
-                direction={orderDirection === 'asc' ? 'asc' : 'desc'}
-                onClick={() => handleRequestSort('dateUpdate')}
+                direction={sortDirection === SORT_ASC ? SORT_ASC : SORT_DESC}
+                onClick={() => handleChangeSort('updated')}
               >
-                Дата добавления
+                {TABLE_HEADER.ROW_DATE_UPDATE}
               </TableSortLabel>
             </TableCell>
           </TableRow>
         </TableHead>
 
         <TableBody>
-          {sortedData.map(({ node }) => (
+          {searchedRepository.edges.map(({ node }) => (
             <TableRow
-              key={`${node.name} ${node.stargazerCount}`}
+              key={`${node.name} ${node.updatedAt}`}
               onClick={() => handleSelectRepository(node.name, node.owner.login)}
               sx={{ '&:last-child td, &:last-child th': { border: 0 }, cursor: 'pointer' }}
             >

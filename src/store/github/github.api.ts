@@ -22,10 +22,10 @@ export const githubApi = createApi({
   },
   endpoints: (builder) => ({
     GetRepositories: builder.query<SearchDataProps, SearchRequestProps>({
-      query: ({ search, per_page, next_page, prev_page }) => ({
+      query: ({ search, per_page, next_page, prev_page, sortProperty, sortDirection }) => ({
         body: `
         query GetRepositories {
-          search(query: "${search}" type: REPOSITORY first: ${per_page} ${
+          search(query: "${search} sort:${sortProperty}-${sortDirection}" type: REPOSITORY first: ${per_page} ${
             next_page ? `after: "${next_page}"` : ''
           } ${prev_page ? `before: "${prev_page}"` : ''} ) {
             repositoryCount

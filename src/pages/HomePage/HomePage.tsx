@@ -8,9 +8,11 @@ import { useNavigate } from 'react-router-dom';
 import { DataGrid, RepositoryInfoBlock } from '@/components';
 import { Footer } from '@/components/Footer';
 import { SearchInput } from '@/components/UI/Input';
+import { ERROR_MESSAGE } from '@/constants';
 import { selectFilter } from '@/store/filter/selectors';
 import { setSelectedRepository } from '@/store/filter/slice';
-import { useLazyGetRepositoriesQuery } from '@/store/github';
+import { setRepositories, useLazyGetRepositoriesQuery } from '@/store/github';
+import { selectRepositories } from '@/store/github/selectors';
 import Button from '@mui/material/Button';
 import Stack from '@mui/material/Stack';
 import TablePagination from '@mui/material/TablePagination';
@@ -21,7 +23,8 @@ import spinnerStyles from '@/styles/css/loading.module.scss';
 export const HomePage = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  const { searchValue, repository } = useSelector(selectFilter);
+  const { searchValue, repository, sortProperty, sortDirection } = useSelector(selectFilter);
+  const { search: searchedRepository } = useSelector(selectRepositories);
 
   const [fetchRepos, { isLoading, isError, data }] = useLazyGetRepositoriesQuery();
 
@@ -29,26 +32,34 @@ export const HomePage = () => {
   const [prevPage, setPrevPage] = React.useState<string>('');
   const [rowsPerPage, setRowsPerPage] = React.useState(10);
   const [page, setPage] = React.useState(0);
+  const [hasFetched, setHasFetched] = React.useState(false);
 
   // Функция для отправки запроса получения репозиториев по поиску
-  const fetchRepositories = async (perPage: number, pageCursor?: string) => {
+  const fetchRepositories = async (perPage: number, next_page?: string, prev_page?: string) => {
     try {
       const response = await fetchRepos({
         search: searchValue,
         per_page: perPage,
-        next_page: pageCursor
+        next_page,
+        prev_page,
+        sortProperty,
+        sortDirection
       });
 
-      if (response.data && response.data.search.pageInfo.hasNextPage) {
-        setNextPage(response.data.search.pageInfo.endCursor);
-      }
+      if (response.data) {
+        dispatch(setRepositories(response.data.search));
 
-      if (response.data && response.data.search.pageInfo.hasPreviousPage) {
-        setPrevPage(response.data.search.pageInfo.startCursor);
+        if (response.data.search.pageInfo.hasNextPage) {
+          setNextPage(response.data.search.pageInfo.endCursor);
+        }
+
+        if (response.data.search.pageInfo.hasPreviousPage) {
+          setPrevPage(response.data.search.pageInfo.startCursor);
+        }
       }
     } catch (error) {
       console.error((error as Error).message);
-      toast.error('Ошибка при выполнении запроса');
+      toast.error(ERROR_MESSAGE);
     }
   };
 
@@ -58,7 +69,7 @@ export const HomePage = () => {
   ) => {
     const newRowsPerPage = Number(event.target.value);
     setRowsPerPage(newRowsPerPage);
-    fetchRepositories(newRowsPerPage);
+    fetchRepositories(newRowsPerPage, nextPage, prevPage);
   };
 
   // Функция обработки поиска
@@ -69,17 +80,19 @@ export const HomePage = () => {
     fetchRepositories(rowsPerPage);
   };
 
-  // Функция обработки пагинации репозиториев
-  const handlePagination = async (direction: 'prev' | 'next') => {
-    const pageCursor = direction === 'next' ? nextPage : prevPage;
-    fetchRepositories(rowsPerPage, pageCursor);
-  };
-
   // Функция обработки изменения страницы
   const handleChangePage = (event: React.MouseEvent<HTMLButtonElement> | null, newPage: number) => {
     setPage(newPage);
-    handlePagination(newPage > page ? 'next' : 'prev');
+    fetchRepositories(rowsPerPage, nextPage, prevPage);
   };
+
+  React.useEffect(() => {
+    if (hasFetched) {
+      fetchRepositories(rowsPerPage);
+    } else {
+      setHasFetched(true);
+    }
+  }, [sortProperty, sortDirection]);
 
   if (data?.search?.edges.length) {
     document.body.classList.add('has-repo-container');
@@ -118,16 +131,16 @@ export const HomePage = () => {
               className={`${spinnerStyles.loading} ${spinnerStyles.dark_mode}`}
               style={{ top: '47%', left: '47%' }}
             />
-          ) : data?.search?.edges.length ? (
+          ) : searchedRepository.repositoryCount ? (
             <>
               <div className={styles.data__container}>
                 <h1 className={styles.data__result__title}>Результаты поиска</h1>
 
-                <DataGrid node={data?.search.edges} />
+                <DataGrid />
 
                 <TablePagination
                   component='div'
-                  count={data.search.repositoryCount}
+                  count={searchedRepository.repositoryCount}
                   page={page}
                   onPageChange={handleChangePage}
                   rowsPerPage={rowsPerPage}
