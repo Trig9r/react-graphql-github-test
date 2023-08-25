@@ -35,27 +35,18 @@ export const HomePage = () => {
   const [hasFetched, setHasFetched] = React.useState(false);
 
   // Функция для отправки запроса получения репозиториев по поиску
-  const fetchRepositories = async (perPage: number, next_page?: string, prev_page?: string) => {
+  const fetchRepositories = async (perPage: number, next_page?: string) => {
     try {
       const response = await fetchRepos({
         search: searchValue,
         per_page: perPage,
         next_page,
-        prev_page,
         sortProperty,
         sortDirection
       });
 
       if (response.data) {
         dispatch(setRepositories(response.data.search));
-
-        if (response.data.search.pageInfo.hasNextPage) {
-          setNextPage(response.data.search.pageInfo.endCursor);
-        }
-
-        if (response.data.search.pageInfo.hasPreviousPage) {
-          setPrevPage(response.data.search.pageInfo.startCursor);
-        }
       }
     } catch (error) {
       console.error((error as Error).message);
@@ -69,7 +60,7 @@ export const HomePage = () => {
   ) => {
     const newRowsPerPage = Number(event.target.value);
     setRowsPerPage(newRowsPerPage);
-    fetchRepositories(newRowsPerPage, nextPage, prevPage);
+    fetchRepositories(newRowsPerPage, nextPage);
   };
 
   // Функция обработки поиска
@@ -82,8 +73,18 @@ export const HomePage = () => {
 
   // Функция обработки изменения страницы
   const handleChangePage = (event: React.MouseEvent<HTMLButtonElement> | null, newPage: number) => {
+    if (newPage > page) {
+      if (searchedRepository.pageInfo.hasNextPage) {
+        setNextPage(searchedRepository.pageInfo.endCursor);
+      }
+      fetchRepositories(rowsPerPage, nextPage);
+    } else {
+      if (searchedRepository.pageInfo.hasPreviousPage) {
+        setPrevPage(searchedRepository.pageInfo.startCursor);
+      }
+      fetchRepositories(rowsPerPage, prevPage);
+    }
     setPage(newPage);
-    fetchRepositories(rowsPerPage, nextPage, prevPage);
   };
 
   React.useEffect(() => {
